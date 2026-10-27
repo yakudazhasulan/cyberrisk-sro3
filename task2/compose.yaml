@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16
+    container_name: cyberrisk-postgres
+    environment:
+      POSTGRES_DB: cyberrisk
+      POSTGRES_USER: cyberrisk_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyberrisk_user -d cyberrisk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: cyberrisk-postgres-app:1.0
+    container_name: cyberrisk-flask
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      DB_HOST: db
+      DB_NAME: cyberrisk
+      DB_USER: cyberrisk_user
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

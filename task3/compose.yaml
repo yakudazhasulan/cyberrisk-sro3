@@ -1,0 +1,36 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: cyberrisk-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: cyberrisk_db
+      MYSQL_USER: cyberrisk_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  app:
+    build: .
+    image: cyberrisk-mysql-app:1.0
+    container_name: cyberrisk-mysql-flask
+    ports:
+      - "127.0.0.1:5001:5000"
+    environment:
+      DB_HOST: db
+      DB_NAME: cyberrisk_db
+      DB_USER: cyberrisk_user
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
